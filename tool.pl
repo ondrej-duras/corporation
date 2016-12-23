@@ -2,7 +2,7 @@
 
 ## Manual ############################################################# {{{ 1
 
-our $VERSION = 2016.121201;
+our $VERSION = 2016.122101;
 our $MANUAL  = <<__MANUAL__;
 NAME: File GET/PUT/DEL/Shell/GetOS toolkit
 FILE: tool.pl
@@ -337,27 +337,29 @@ our $HMATRIX={
  'L-get-JW' => sub{ print color "#- L-get-JW [${FILE}] Not Implemented yet !\n"; },
  'L-get-NL' => sub{
                     $ENV{"SSHPASS"}=$PASS;
-                    foreach my $FILE (@AFILES) {
-                      my $FNAME=basename($FILE);
-                      print color "#\> scp ${USER}\@${DEVIP}:${FILE} ${FNAME}\n";
-                      system("sshpass -e scp ${USER}\@${DEVIP}:${FILE} ${FNAME}"); 
-                    }
+                    my $FNAME=basename($FILE);
+                    print color "#\> scp ${USER}\@${DEVIP}:${FILE} ${FNAME}\n";
+                    system("sshpass -e scp ${USER}\@${DEVIP}:${FILE} ${FNAME}"); 
                   },
  'L-get-JL' => sub{ 
-                    $PID=$$;
-                    foreach my $FILE (@AFILES) {
-                      my $FNAME=basename($FILE);
-                      print color "#\> scp ${USER}\@${DEVIP}:${FILE} ${FNAME}\n";
-                      system("ssh ${JMPX} sshpass -p '${PASS}' scp ${USER}\@${DEVIP}:${FILE} ..tmp.${PID}.${FNAME}");
-                      system("scp :${FILE} ${FNAME}"); 
-                    }
+                    my $PID=$$;
+                    my $FNAME=basename($FILE);
+                    print color "#\> scp ${USER}\@${DEVIP}:${FILE} ${FNAME}\n";
+                    system("ssh ${JMPX} sshpass -p '${PASS}' scp ${USER}\@${DEVIP}:${FILE} ..tmp.${PID}.${FNAME}");
+                    system("scp ${JMPX}:..tmp.${PID}.${FNAME} ${FNAME}"); 
+                    system("ssh ${JMPX}   rm -vf ..tmp.${PID}.${FNAME}");
                   },
  'L-put-NW' => sub{ 
                     debug "#: L-put-NW ${FILE} ${FULL}\n";
                     action("smbclient -U ${USER}\%${PASS} //${DEVIP}/C\$ -c 'put ${FILE} ${FULL}'"); 
                   },
  'L-put-JW' => sub{ print color "#- L-put-JW [${FILE}] Not Implemented yet !\n"; },
- 'L-put-NL' => sub{ print color "#- L-put-NL [${FILE}] Not Implemented yet !\n"; },
+ 'L-put-NL' => sub{ 
+                    $ENV{"SSHPASS"}=$PASS;
+                    my $FNAME=basename($FILE);
+                    print color "#\> scp ${FNAME} ${USER}\@${DEVIP}:${FILE}\n";
+                    system("sshpass -e scp ${FNAME} ${USER}\@${DEVIP}:${FILE}"); 
+                  },
  'L-put-JL' => sub{ print color "#- L-put-JL [${FILE}] Not Implemented yet !\n"; },
  'L-del-NW' => sub{ print color "#- L-del-NW [${FILE}] Not Implemented yet !\n"; },
  'L-del-JW' => sub{ print color "#- L-del-JW [${FILE}] Not Implemented yet !\n"; },
