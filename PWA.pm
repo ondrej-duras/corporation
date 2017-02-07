@@ -1,6 +1,6 @@
 #
 # PWA.PM - Password Agent - Draft;
-# 20160422, Ing. Ondrej DURAS, +421-2-692-57912
+# 20160422, Ing. Ondrej DURAS Capt. (Ret.), +421-2-692-57912
 # ~/prog/pwa/PWA.pm
 #
 
@@ -17,7 +17,8 @@ use Term::ReadKey;
 use Data::Dumper;
 #use Data::Dumper;
 
-our $VERSION=2016.121207;
+our $MODE_DEBUG="";
+our $VERSION=2017.020701;
 our $PWA_DEFAULT_PHRASE="HPe#1Helion2VPC3!";
 our $PWA_SESSION_PHRASE=$PWA_DEFAULT_PHRASE;
 our $SECRET = {};
@@ -255,7 +256,7 @@ sub pwaChar($$$$) {
   $$REFB=($$REFB +1 ) % 256;
   $$REFA=(($$REFA + $$REFB) ) % 256;
   $IDX = ($$REFA * $$REFB) % $LEN;
-  my $CHX = $CHR ^ $$REFA ^ ord(substr($PHRASE,$IDX,1));
+  my $CHX = ($CHR ^ $$REFA ^ ord(substr($PHRASE,$IDX,1))) % 256;
   #print "#: CHR=${CHR} CHX=${CHX} REFA=${${REFA}} REFB=${${REFB}} IDX=${IDX}\n";
   return $CHX;
 }
@@ -770,6 +771,7 @@ sub pwaCred($) {
 
 $SECRET = {};
 $NEWDAT = {};
+if(exists $ENV{"MODE_DEBUG"}) { $MODE_DEBUG=$ENV{"MODE_DEBUG"}; }
 
 # loads an session data if exist
 $FILE = pwaSession();
