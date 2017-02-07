@@ -7,7 +7,7 @@ import sys
 import re
 import random
 
-VERSION = 2017.020101
+VERSION = 2017.020102
 MODE_DEBUG = ""
 PWA_SESSION_PHRASE = PWA_DEFAULT_PHRASE = "HPe#1Helion2VPC3!"
 SECRET = {}
@@ -105,7 +105,7 @@ def pwaGenerate():
 
 
 ####################################################################### }}} 1
-## pwaEnv ############################################################# {{{ 1
+## pwaEnv / pwaDump ################################################### {{{ 1
 
 def pwaEnv():
   CONFIG = {}
@@ -140,8 +140,10 @@ def pwaEnv():
 
   return CONFIG
 
-def pwaDump(CONFIG=SECRET):
+def pwaDump(CONFIG=None):
   global SECRET
+  if CONFIG == None:
+    CONFIG=SECRET
   for USER in CONFIG.keys():
     print "[%s]" % (USER)
     for KEY in CONFIG[USER].keys():
@@ -158,7 +160,7 @@ def pwa(USER,KEY):
     VAL=SECRET[USER][KEY]
   except:
     VAL=""
-  print "#: USER=%s KEY=%s VAL=%s" % (USER,KEY,VAL)
+  #print "#: USER=%s KEY=%s VAL=%s" % (USER,KEY,VAL)
   return VAL
 
 def pwaLogin(USER):
@@ -186,7 +188,6 @@ def main():
   if "MODE_DEBUG" in os.environ:
       MODE_DEBUG = os.environ["MODE_DEBUG"]
       print "#: MODE_DEBUG = %s" % (MODE_DEBUG)
-  SECRET = pwaEnv()
   for idx in (1,len(sys.argv),1):
     argx = sys.argv[idx]
     if re.match("-+test",argx):
@@ -227,6 +228,7 @@ def main():
       sys.exit(0)
       
 
+SECRET = pwaEnv()
 if __name__ == "__main__":
   main()
 
