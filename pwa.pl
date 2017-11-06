@@ -11,7 +11,7 @@ use warnings;
 use Data::Dumper;
 use PWA;
 
-our $VERSION = 2016.121201;
+our $VERSION = 2017.110701;
 our $MANUAL  = <<__END__;
 NAME: PassWord Agent Utility
 FILE: ./pwa
@@ -33,7 +33,7 @@ PARAMETERS:
   -u / -U - user profile from command line
   -m / -M - user method
   -l / -L - user login 
-  -p / -P - user password
+  -p / -P - user password (also -P1 or -P2 try it)
   -i / -I - user description
   -a / -A - user specific atribute (use with -v)
   -v / -V - user specific value (use with -a)
@@ -117,6 +117,8 @@ while(my $ARGX = shift @ARGV) {
   if($ARGX =~ /^-+U/)    { $MODE_USER     = pwaInput('User Profile: ');          $MODE_WRITE=2; next; }
   if($ARGX =~ /^-+M/)    { $MODE_METH     = pwaInput("[${MODE_USER}] Method: "); $MODE_WRITE=2; next; }
   if($ARGX =~ /^-+L/)    { $MODE_LOGIN    = pwaInput("[${MODE_USER}] Login: ");  $MODE_WRITE=2; next; }
+  if($ARGX =~ /^-+P1/)   { $MODE_PASSWORD = pwaInputSecret("[${MODE_USER}] Password: "); $MODE_WRITE=2; next; }
+  if($ARGX =~ /^-+P2/)   { $MODE_PASSWORD = pwaInputVerify("[${MODE_USER}] Password: "); $MODE_WRITE=2; next; }
   if($ARGX =~ /^-+P/)    { $MODE_PASSWORD = pwaInputVerify("[${MODE_USER}] Password: "); $MODE_WRITE=2; next; }
   if($ARGX =~ /^-+I/)    { $MODE_DESC     = pwaInput("[${MODE_USER}] Description: ");    $MODE_WRITE=2; next; }
   if($ARGX =~ /^-+A/)    { $MODE_ATTRIB   = pwaInput("[${MODE_USER}] attribute name: "); $MODE_WRITE=2; next; }
