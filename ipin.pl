@@ -9,7 +9,7 @@ use warnings;
 
 ## MANUAL ############################################################# {{{ 1
 
-our $VERSION = 2017.112701;
+our $VERSION = 2017.122701;
 our $MANUAL  = <<__MANUAL__;
 NAME: IPIN
 FILE: ipin.pl
@@ -265,6 +265,7 @@ sub ipin_err($$) {
 
 our $IPIN_INC = "";    # --includes
 our $IPIN_CON = "";    # --contained 
+our $IPIN_DTL = 0;     # --details
 our $MODE_VERBOSE = 0; # 0-silent 1-full listing
 our $FFLAG = 0; 
 our @ALIST=(); # list of IP addresses
@@ -280,6 +281,7 @@ while(my $ARGX = shift @ARGV) {
   if($ARGX =~ /^-+v/) { $MODE_VERBOSE = 1; next; }       # --verbose
   if($ARGX =~ /^-+i/) { $IPIN_INC = shift @ARGV; next; } # --includes
   if($ARGX =~ /^-+c/) { $IPIN_CON = shift @ARGV; next; } # --contained
+  if($ARGX =~ /^-+d/) { $IPIN_DTL = 1; next; }           # --details
   if($ARGX =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/) { push @ALIST,$ARGX; next; }
   if($ARGX =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]+$/) { push @ALIST,$ARGX; next; }
   if($ARGX =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/) { push @ALIST,$ARGX; next; }
@@ -304,7 +306,42 @@ if($IPIN_CON) {
   }
 }
 
-
+if($IPIN_DTL) {
+  foreach my $XIP (@ALIST) {
+    my $BIP = ipin2bin($XIP);
+    my $BMS = ipin2mask($XIP);
+    my $NEG = 0xffffffff - $BMS;
+    my $NIP = $BIP & $BMS;
+    my $BCS = $BIP | $NEG;
+    my $GWA = $NIP +1;
+    my $ND1 = $NIP +2;
+    my $ND2 = $NIP +3;
+    my $FST = $NIP +4;
+    my $LST = $BCS -1;
+    my $HBT = 0;
+    my $BXX = $NEG;
+    while($BXX > 0 ) { $HBT++; $BXX=$BXX>>1; }
+    my $NBT = 32 - $HBT;
+    my $URG = ipin2dot($FST) . "-" . ipin2dot($LST);
+    if(($HBT>2) && ($HBT<9)) {
+      my $LOC = ipin2dot($LST); $LOC=~s/.*\.//;
+      $URG = ipin2dot($FST) . "-" . $LOC;
+    }
+    if($HBT<3) { $URG = "none"; }
+    print "IP address ................ " . ipin2dot($BIP) ."\n";
+    print "Network Mask .............. " . ipin2dot($BMS) ."\n";
+    print "Network Bits .............. " . $NBT ."\n";
+    print "Host Bits ................. " . $HBT ."\n";
+    print "Network Address ........... " . ipin2dot($NIP) ."\n";
+    print "Default Gateway ........... " . ipin2dot($GWA) ."\n" if $HBT > 2;
+    print "Primary Node .............. " . ipin2dot($ND1) ."\n" if $HBT > 2;
+    print "Secondary Node ............ " . ipin2dot($ND2) ."\n" if $HBT > 2;
+    print "Firts Usable IP address ... " . ipin2dot($FST) ."\n" if $HBT > 2;
+    print "Last Usable IP address .... " . ipin2dot($LST) ."\n" if $HBT > 2;
+    print "Usable IP addresses ....... " . $URG ."\n" if $HBT > 2;
+    print "Broadcast address ......... " . ipin2dot($BCS) ."\n\n";
+  }
+}
 
 ####################################################################### }}} 1
 # --- end ---
