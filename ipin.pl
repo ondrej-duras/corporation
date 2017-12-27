@@ -9,7 +9,7 @@ use warnings;
 
 ## MANUAL ############################################################# {{{ 1
 
-our $VERSION = 2017.122704;
+our $VERSION = 2017.122705;
 our $MANUAL  = <<__MANUAL__;
 NAME: IPIN
 FILE: ipin.pl
@@ -459,7 +459,7 @@ if($IPIN_GRP and $IPIN_INC) {
   while( my $LINE=<$FH>) {
    chomp $LINE;
    $CTLINE++;
-   my $XLINE=$LINE; $XLINE=~s/[^0-9\/\.]/ /g;
+   my $XLINE=$LINE; $XLINE=~s/[^0-9\/\.%]/ /g;
    my @AITEMS = split(/\s+/,$XLINE);
    foreach my $ITEM (@AITEMS) {
      next unless $ITEM =~ /^[0-9]/;
@@ -486,7 +486,7 @@ if($IPIN_GRP and $IPIN_CON) {
   while( my $LINE=<$FH>) {
    chomp $LINE;
    $CTLINE++;
-   my $XLINE=$LINE; $XLINE=~s/[^0-9\/\.]/ /g;
+   my $XLINE=$LINE; $XLINE=~s/[^0-9\/\.%]/ /g;
    my @AITEMS = split(/\s+/,$XLINE);
    foreach my $ITEM (@AITEMS) {
      next unless $ITEM =~ /^[0-9]/;
