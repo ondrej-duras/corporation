@@ -9,7 +9,7 @@ use warnings;
 
 ## MANUAL ############################################################# {{{ 1
 
-our $VERSION = 2017.122701;
+our $VERSION = 2017.122703;
 our $MANUAL  = <<__MANUAL__;
 NAME: IPIN
 FILE: ipin.pl
@@ -24,15 +24,24 @@ DESCRIPTION:
 USAGE:
   ipin --includes  172.20.36.0/24 172.20.36.38/27 172.20.36.123
   ipin --contained 172.20.36.123  172.20.36.0/24 172.16.0.0/12 10.0.0.0/8
-  #ipin --subnet    172.20.0.0/16  --bits 8
-  #ipin --details   172.20.36.123/24
+  ipin --details   172.20.36.123/24
+  ipin --network   172.20.36.123/24 172.20.36.127/25
+  ipin --line --contained 10.28.17.10/24 -search config.txt
+  ipin --contained 10.28.17.10/28 -search config.txt --gw
+  ipin --includes 172.20.36.123/24 -grep config.txt
+
 
 PARAMETERS:
   --includes   <network/mask> includes following IP/ranges
   --containded <network/mask> is included in following IP/ranges
-  #--details    <network/mask> calculates all usual details
-  #--subnet     <network/mask> shows all subnets of the range
-  #--bits       <bits>  bits taken from host range for subnets
+  --details       calculates all usual details
+  --network       calculates network and broadcast addresses
+  --search <file> searches for IP addresses - standalone words
+  --grep <file>   searches for IP addresses - cuts all non-IP parts
+  --line          shows line numbers
+  --no-line       hides line numbers
+  --gw / --zero   includes 0.0.0.0 (usefull with --contained)
+  --no-gw / --no-zero excludes 0.0.0.0 (default / usefull with --contained)
 
 SEE ALSO:
   https://github.com/ondrej-duras/
@@ -266,9 +275,15 @@ sub ipin_err($$) {
 our $IPIN_INC = "";    # --includes
 our $IPIN_CON = "";    # --contained 
 our $IPIN_DTL = 0;     # --details
+our $IPIN_NET = 0;     # --network
+our $IPIN_SRC = "";    # --search <file>
+our $IPIN_GRP = "";    # --grep <file>
+our $IPIN_LIN = 0;     # --line =1 / --no-line =0
+our $IPIN_DGW = 0;     # --gw =1 --zero =1 --no-gw =0 --no-zero =0
 our $MODE_VERBOSE = 0; # 0-silent 1-full listing
 our $FFLAG = 0; 
 our @ALIST=(); # list of IP addresses
+our $FH;               # file handler
 
 # Command-line handling
 my $CTARG=scalar(@ARGV);
@@ -278,10 +293,17 @@ if($CTARG <2) {
 }
 
 while(my $ARGX = shift @ARGV) {
-  if($ARGX =~ /^-+v/) { $MODE_VERBOSE = 1; next; }       # --verbose
-  if($ARGX =~ /^-+i/) { $IPIN_INC = shift @ARGV; next; } # --includes
-  if($ARGX =~ /^-+c/) { $IPIN_CON = shift @ARGV; next; } # --contained
-  if($ARGX =~ /^-+d/) { $IPIN_DTL = 1; next; }           # --details
+  if($ARGX =~ /^-+line/)         { $IPIN_LIN=1; next; } # --line
+  if($ARGX =~ /^-+no-?line/)     { $IPIN_LIN=0; next; } # --no-line
+  if($ARGX =~ /^-+(gw|zero)/)    { $IPIN_DGW=1; next; } # --gw  --zero
+  if($ARGX =~ /^-+no-?(gw|zero)/){ $IPIN_DGW=0; next; } # --no-gw --no-zero
+  if($ARGX =~ /^-+v/) { $MODE_VERBOSE = 1; next; }      # --verbose
+  if($ARGX =~ /^-+i/) { $IPIN_INC = shift @ARGV; next; }# --includes
+  if($ARGX =~ /^-+c/) { $IPIN_CON = shift @ARGV; next; }# --contained
+  if($ARGX =~ /^-+d/) { $IPIN_DTL = 1; next; }          # --details
+  if($ARGX =~ /^-+n/) { $IPIN_NET = 1; next; }          # --network
+  if($ARGX =~ /^-+g/) { $IPIN_GRP = shift @ARGV; next; }# --grep <file>
+  if($ARGX =~ /^-+s/) { $IPIN_SRC = shift @ARGV; next; }# --search <file>
   if($ARGX =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/) { push @ALIST,$ARGX; next; }
   if($ARGX =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]+$/) { push @ALIST,$ARGX; next; }
   if($ARGX =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/) { push @ALIST,$ARGX; next; }
@@ -342,6 +364,137 @@ if($IPIN_DTL) {
     print "Broadcast address ......... " . ipin2dot($BCS) ."\n\n";
   }
 }
+
+if($IPIN_NET) {
+  my %QLIST=();
+  my $FFLAG = "";
+  my $FCOUNT= 64;
+  foreach my $XIP (@ALIST) {
+    my $BIP = ipin2bin($XIP);
+    my $BMS = ipin2mask($XIP);
+    my $NEG = 0xffffffff - $BMS;
+    my $NIP = $BIP & $BMS;
+    my $BCS = $BIP | $NEG;
+    if(exists($QLIST{$NIP})) { 
+      $FFLAG=chr($QLIST{$NIP}); }
+    else {
+      $FCOUNT++ if $FCOUNT<ord('Z');
+      $QLIST{$NIP} = $FCOUNT;
+      $FFLAG=chr($FCOUNT);
+    }
+    printf("%15s %15s %15s  %s\n",ipin2dot($BIP),ipin2dot($NIP),ipin2dot($BCS),$FFLAG); 
+  }
+}
+
+if($IPIN_SRC and $IPIN_INC) {
+  if($IPIN_SRC eq "-") { open $FH,"<&STDIN" or die "#- Error: STDIN unreachable !\n"; }
+  else { open $FH,"<",$IPIN_SRC or die "#- Error: File  '${IPIN_SRC}' unreachable !\n"; }
+  my $CTLINE = 0;
+  while( my $LINE=<$FH>) {
+   chomp $LINE;
+   $CTLINE++;
+   my @AITEMS = split(/\s+/,$LINE);
+   foreach my $ITEM (@AITEMS) {
+     next unless $ITEM =~ /^[0-9]/;
+     my $FFLAG=0;
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
+     next unless $FFLAG;
+     if(ipin($IPIN_INC,$ITEM) & 1) { 
+       if($IPIN_LIN) { print "$CTLINE;${LINE}\n"; }
+       else          { print "${LINE}\n"; }
+       last; 
+     }
+   }
+  }
+  close $FH;
+}
+
+if($IPIN_SRC and $IPIN_CON) {
+  if($IPIN_SRC eq "-") { open $FH,"<&STDIN" or die "#- Error: STDIN unreachable !\n"; }
+  else { open $FH,"<",$IPIN_SRC or die "#- Error: File  '${IPIN_SRC}' unreachable !\n"; }
+  my $CTLINE = 0;
+  while( my $LINE=<$FH>) {
+   chomp $LINE;
+   $CTLINE++;
+   my @AITEMS = split(/\s+/,$LINE);
+   foreach my $ITEM (@AITEMS) {
+     next unless $ITEM =~ /^[0-9]/;
+     my $FFLAG=0;
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
+     next unless $FFLAG;
+     unless($IPIN_DGW) { # ---no-gw - skips the item if equal 0.0.0.0/x
+       next if(ipin2bin($ITEM) == 0)
+     }
+     if(ipin($IPIN_CON,$ITEM) & 2) { 
+       if($IPIN_LIN) { print "$CTLINE;${LINE}\n"; }
+       else          { print "${LINE}\n"; }
+       last; 
+     }
+   }
+  }
+  close $FH;
+}
+
+
+if($IPIN_GRP and $IPIN_INC) {
+  if($IPIN_GRP eq "-") { open $FH,"<&STDIN" or die "#- Error: STDIN unreachable !\n"; }
+  else { open $FH,"<",$IPIN_GRP or die "#- Error: File  '${IPIN_GRP}' unreachable !\n"; }
+  my $CTLINE = 0;
+  while( my $LINE=<$FH>) {
+   chomp $LINE;
+   $CTLINE++;
+   my $XLINE=$LINE; $XLINE=~s/[^0-9\/\.]/ /g;
+   my @AITEMS = split(/\s+/,$XLINE);
+   foreach my $ITEM (@AITEMS) {
+     next unless $ITEM =~ /^[0-9]/;
+     my $FFLAG=0;
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
+     next unless $FFLAG;
+     if(ipin($IPIN_INC,$ITEM) & 1) { 
+       if($IPIN_LIN) { print "$CTLINE;${LINE}\n"; }
+       else          { print "${LINE}\n"; }
+       last; 
+     }
+   }
+  }
+  close $FH;
+}
+
+if($IPIN_GRP and $IPIN_CON) {
+  if($IPIN_GRP eq "-") { open $FH,"<&STDIN" or die "#- Error: STDIN unreachable !\n"; }
+  else { open $FH,"<",$IPIN_GRP or die "#- Error: File  '${IPIN_GRP}' unreachable !\n"; }
+  my $CTLINE = 0;
+  while( my $LINE=<$FH>) {
+   chomp $LINE;
+   $CTLINE++;
+   my $XLINE=$LINE; $XLINE=~s/[^0-9\/\.]/ /g;
+   my @AITEMS = split(/\s+/,$XLINE);
+   foreach my $ITEM (@AITEMS) {
+     next unless $ITEM =~ /^[0-9]/;
+     my $FFLAG=0;
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
+     $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
+     next unless $FFLAG;
+     unless($IPIN_DGW) { # ---no-gw - skips the item if equal 0.0.0.0/x
+       next if(ipin2bin($ITEM) == 0)
+     }
+     if(ipin($IPIN_CON,$ITEM) & 2) { 
+       if($IPIN_LIN) { print "$CTLINE;${LINE}\n"; }
+       else          { print "${LINE}\n"; }
+       last; 
+     }
+   }
+  }
+  close $FH;
+}
+
 
 ####################################################################### }}} 1
 # --- end ---
