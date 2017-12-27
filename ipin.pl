@@ -9,7 +9,7 @@ use warnings;
 
 ## MANUAL ############################################################# {{{ 1
 
-our $VERSION = 2017.122703;
+our $VERSION = 2017.122704;
 our $MANUAL  = <<__MANUAL__;
 NAME: IPIN
 FILE: ipin.pl
@@ -29,6 +29,7 @@ USAGE:
   ipin --line --contained 10.28.17.10/24 -search config.txt
   ipin --contained 10.28.17.10/28 -search config.txt --gw
   ipin --includes 172.20.36.123/24 -grep config.txt
+  ipin --include 10.0.0.0/8 -f5 --grep viprion-one-line.txt
 
 
 PARAMETERS:
@@ -41,7 +42,8 @@ PARAMETERS:
   --line          shows line numbers
   --no-line       hides line numbers
   --gw / --zero   includes 0.0.0.0 (usefull with --contained)
-  --no-gw / --no-zero excludes 0.0.0.0 (default / usefull with --contained)
+  --no-gw         excludes 0.0.0.0 (default / usefull with --contained)
+  --f5            removes F5 routing domains from IP addresses
 
 SEE ALSO:
   https://github.com/ondrej-duras/
@@ -270,7 +272,7 @@ sub ipin_err($$) {
 
 }
 ####################################################################### }}} 1
-## MAIN ############################################################### {{{ 1
+## MAIN - Defaults and CommandLine #################################### {{{ 1
 
 our $IPIN_INC = "";    # --includes
 our $IPIN_CON = "";    # --contained 
@@ -280,6 +282,7 @@ our $IPIN_SRC = "";    # --search <file>
 our $IPIN_GRP = "";    # --grep <file>
 our $IPIN_LIN = 0;     # --line =1 / --no-line =0
 our $IPIN_DGW = 0;     # --gw =1 --zero =1 --no-gw =0 --no-zero =0
+our $IPIN_F5M = 0;     # --f5 --bigip -rd
 our $MODE_VERBOSE = 0; # 0-silent 1-full listing
 our $FFLAG = 0; 
 our @ALIST=(); # list of IP addresses
@@ -297,6 +300,7 @@ while(my $ARGX = shift @ARGV) {
   if($ARGX =~ /^-+no-?line/)     { $IPIN_LIN=0; next; } # --no-line
   if($ARGX =~ /^-+(gw|zero)/)    { $IPIN_DGW=1; next; } # --gw  --zero
   if($ARGX =~ /^-+no-?(gw|zero)/){ $IPIN_DGW=0; next; } # --no-gw --no-zero
+  if($ARGX =~ /^-+(f5|rd|bigip)/){ $IPIN_F5M=1; next; } # --f5 --bigip -rd
   if($ARGX =~ /^-+v/) { $MODE_VERBOSE = 1; next; }      # --verbose
   if($ARGX =~ /^-+i/) { $IPIN_INC = shift @ARGV; next; }# --includes
   if($ARGX =~ /^-+c/) { $IPIN_CON = shift @ARGV; next; }# --contained
@@ -312,6 +316,8 @@ while(my $ARGX = shift @ARGV) {
 }
 if($FFLAG) { die "#- Errors found.\n"; }
 
+####################################################################### }}} 1
+## MAIN - simple line --include --contain --details --net ############# {{{ 1
 
 
 if($IPIN_INC) {
@@ -386,6 +392,10 @@ if($IPIN_NET) {
   }
 }
 
+####################################################################### }}} 1
+## MAIN - --search --grep for --include and --contained ############### {{{ 1
+
+
 if($IPIN_SRC and $IPIN_INC) {
   if($IPIN_SRC eq "-") { open $FH,"<&STDIN" or die "#- Error: STDIN unreachable !\n"; }
   else { open $FH,"<",$IPIN_SRC or die "#- Error: File  '${IPIN_SRC}' unreachable !\n"; }
@@ -397,6 +407,7 @@ if($IPIN_SRC and $IPIN_INC) {
    foreach my $ITEM (@AITEMS) {
      next unless $ITEM =~ /^[0-9]/;
      my $FFLAG=0;
+     $ITEM=~s/\%[0-9]+// if $IPIN_F5M;
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
@@ -422,6 +433,7 @@ if($IPIN_SRC and $IPIN_CON) {
    foreach my $ITEM (@AITEMS) {
      next unless $ITEM =~ /^[0-9]/;
      my $FFLAG=0;
+     $ITEM=~s/\%[0-9]+// if $IPIN_F5M;
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
@@ -452,6 +464,7 @@ if($IPIN_GRP and $IPIN_INC) {
    foreach my $ITEM (@AITEMS) {
      next unless $ITEM =~ /^[0-9]/;
      my $FFLAG=0;
+     $ITEM=~s/\%[0-9]+// if $IPIN_F5M;
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
@@ -478,6 +491,7 @@ if($IPIN_GRP and $IPIN_CON) {
    foreach my $ITEM (@AITEMS) {
      next unless $ITEM =~ /^[0-9]/;
      my $FFLAG=0;
+     $ITEM=~s/\%[0-9]+// if $IPIN_F5M;
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,3}(\.[0-9]{1,3}){3}$/);
      $FFLAG=1 if( $ITEM =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}\/[0-9]{1,2}$/);
