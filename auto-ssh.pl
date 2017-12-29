@@ -63,7 +63,7 @@ while($LINE=<CHLD_OUT>) {
  print $LINE;
 }
 
-# ukoncenie prace na strane ju8mp servera
+# ukoncenie prace na strane jump servera
 close CHLD_IN;
 close CHLD_OUT;
 
