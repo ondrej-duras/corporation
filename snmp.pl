@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 
-our $VERSION = 2018.011601;
+our $VERSION = 2018.011701;
 our $MANUAL  = <<__MANUAL__;
 NAME: SNMP tshoot
 FILE: snmp.pl
