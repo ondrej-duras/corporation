@@ -1,19 +1,22 @@
 #!/usr/bin/perl
 
-our $VERSION = 2018.011702;
+our $VERSION = 2018.011704;
 our $MANUAL  = <<__MANUAL__;
 NAME: DNS resolving utility for TSIF :-)
-FILE: xfqdn.pl
+FILE: xresolve.pl
 
 DESCRIPTION:
   Helps to provide DNS vectors DEVIP;HNAME;FQDN
   ... do not worry to much :-)
 
 USAGE:
-  ./xfqdn.pl server1 router1.domain.tld switch2 1.2.3.4 2.3.4.5
+  ./xresolve.pl server1 router1.domain.tld 1.2.3.4 2.3.4.5
+  cat snmp1.csv | ./xresolve.pl --tsif | tee -a snmp2.csv
 
-PARAMETERS;
-  
+PARAMETERS:
+  --tsif  - takes incomplete TSIF records from STDIN
+  --short - short hostname as FQDN is enought
+  --long  - IP address is translated to FQDN via PTR
 
 VERSION: ${VERSION}
 __MANUAL__
@@ -26,7 +29,7 @@ use POSIX;
 use Socket;
 
 our @ALIST=();
-our @ADOMAINS=("",".poznamky.net",".tsian.net");
+our @ADOMAINS=("",".net.dc.orange.sk",".ip.orange.sk",".net.orange.sk");
 our $XRESOLVE_FQDN = 1; # 0=HNAME2FQDN=disabled 1=HNAME-to-FQDN=enabled
 sub xresolve($) {
   my $ANY = shift;
@@ -70,13 +73,32 @@ sub xresolve($) {
 
 
 
-
+our $MODE_TSIF = 0; # --tsif
 unless(scalar(@ARGV)) {
   print $MANUAL;
   exit;
 }
 while(my $ARGX = shift @ARGV) {
+  if($ARGX =~ /^-+long/)  { $XRESOLVE_FQDN = 1; next; }
+  if($ARGX =~ /^-+short/) { $XRESOLVE_FQDN = 0; next; }
+  if($ARGX =~ /^-+tsif/)  { $MODE_TSIF     = 1; next; }
   push @ALIST,$ARGX;
+}
+
+if($MODE_TSIF) {
+  while(my $LINE=<>) {
+    chomp $LINE;
+    if($LINE=~/^\s*$/) { print "\n";        next; }
+    if($LINE=~/^\s*#/) { print "${LINE}\n"; next; }
+    my($DEVIP,$HNAME,$REST) = split(/\s*;\s*/,$LINE,3);
+    my $FQDN;
+    if($DEVIP) {
+      ($DEVIP,$HNAME,$FQDN) = xresolve($DEVIP);
+    } elsif($HNAME) {
+      ($DEVIP,$HNAME,$FQDN) = xresolve($HNAME);
+    }
+    print "${DEVIP};${HNAME};${REST};${FQDN}\n";
+  }
 }
 
 foreach my $ITEM (@ALIST) {
