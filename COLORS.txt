@@ -1,0 +1,15 @@
+
+Pergamon terminal colors:
+
+Foreground RGB  
+  dec:  197,  187,  144
+  hex: 0xC5, 0xBB, 0x90
+  oct: 0305, 0273, 0220
+Background RGB
+  dec:   37,   23,    0
+  hex: 0x25, 0x23,  0x0  
+  oct:  045,  027,    0
+
+--- end ---
+
+
