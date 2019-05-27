@@ -3,7 +3,7 @@
 
 ## Manual ############################################################# {{{ 1
 
-VERSION = 2019.052701
+VERSION = 2019.052702
 MANUAL  = """
 NAME: Change Implementation Procedures to PDF
 FILE: cip.py
@@ -163,21 +163,33 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
         fhout.setFont("Courier", 10)
         MODE='code'
         continue
+
       if re.match('#=text',line):    # next lines are TEXT
         fhout.setStrokeColorRGB(0,0,0.5)
         fhout.setFillColorRGB(0,0,0.5)
         fhout.setFont("Verdana", 10)
         MODE='text'
         continue
+
       if re.match('#=page',line):    # a page delimiter, next lines are on the next page
         bgline = 820
         PGNUM = PGNUM + 1
         fhout.showPage()
         DIRTY = 0
+        if MODE == 'code':
+          fhout.setStrokeColorRGB(0,0,0)
+          fhout.setFillColorRGB(0,0,0)
+          fhout.setFont("Courier", 10)
+        if MODE == 'text':
+          fhout.setStrokeColorRGB(0,0,0.5)
+          fhout.setFillColorRGB(0,0,0.5)
+          fhout.setFont("Verdana", 10)
         continue
+
       if re.match('#=cut',line):       # next lines are skipped / not exported to PDF
         MODE = 'cut'
         continue
+
       if re.match('#=hash',line):      # exports /^#/ lines also
         HASH = 1
         continue
@@ -196,6 +208,7 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
       if re.match('#=nofix',line):     # restricts use of <<< for yellow line highlighting
         FIX = ''
         continue
+
       if re.match('#=head',line):      # Prints a Head or Label
         # removing a TAG name
         HEAD = re.sub("^#=head","",line)
