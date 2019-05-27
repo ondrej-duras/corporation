@@ -3,7 +3,7 @@
 
 ## Manual ############################################################# {{{ 1
 
-VERSION = 2019.052702
+VERSION = 2019.052703
 MANUAL  = """
 NAME: Change Implementation Procedures to PDF
 FILE: cip.py
@@ -276,6 +276,14 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
       bgline = 820
       PGNUM = PGNUM + 1
       fhout.showPage()
+      if MODE == 'code':
+        fhout.setStrokeColorRGB(0,0,0)
+        fhout.setFillColorRGB(0,0,0)
+        fhout.setFont("Courier", 10)
+      if MODE == 'text':
+        fhout.setStrokeColorRGB(0,0,0.5)
+        fhout.setFillColorRGB(0,0,0.5)
+        fhout.setFont("Verdana", 10)
       DIRTY = 0
 
   if DIRTY: fhout.showPage()
