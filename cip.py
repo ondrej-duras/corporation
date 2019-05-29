@@ -3,7 +3,7 @@
 
 ## Manual ############################################################# {{{ 1
 
-VERSION = 2019.052703
+VERSION = 2019.052704
 MANUAL  = """
 NAME: Change Implementation Procedures to PDF
 FILE: cip.py
@@ -147,7 +147,7 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
   fhout.setFont("Courier", 10)
   bgline  = 820    # 1st line Y-coordinates / bottom-left point of the first letter is going to be printed at 20,820
   DIRTY   = 0      # =1 means there was printed something on the page already (DIRTY page)
-  HASH    = 0      # 0= skips all lines matching /^#/
+  HASH    = 1      # 0= skips all lines matching /^#/
   COMMENT = '#!;'  # command line delimiters for comment highlighting
   FIX     = "<<<"  # "FIX" line - yellow background
   MODE    = 'cut'
@@ -212,12 +212,16 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
       if re.match('#=head',line):      # Prints a Head or Label
         # removing a TAG name
         HEAD = re.sub("^#=head","",line)
-        fhout.setStrokeColorRGB(0.75,0.75,0.7)
+        #fhout.setStrokeColorRGB(0.75,0.75,0.7)
+        fhout.setStrokeColorRGB(0.95,0.95,0.9)
         fhout.setFillColorRGB(0.95,0.95,0.9)
-        fhout.rect(17,bgline-13,595-17-17,16, fill=1)
+        #fhout.rect(17,bgline-13,595-17-17,16, fill=1)
+        fhout.rect(17,bgline-13,595-17-17,19.5, fill=1)
         # preparing a font/style
-        fhout.setStrokeColorRGB(0.3,0.3,0)
-        fhout.setFillColorRGB(0.3,0.3,0)
+        #fhout.setStrokeColorRGB(0.3,0.3,0)
+        #fhout.setFillColorRGB(0.3,0.3,0)
+        fhout.setStrokeColorRGB(0.1,0.1,0.3)
+        fhout.setFillColorRGB(0.1,0.1,0.3)
         fhout.setFont("Verdana", 14)
         # printing a HEAD/LABEL onto paper
         fhout.drawString(20,bgline-10,HEAD); DIRTY=1
