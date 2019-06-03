@@ -3,12 +3,13 @@
 
 ## Manual ############################################################# {{{ 1
 
-VERSION = 2019.052704
+VERSION = 2019.060301
 MANUAL  = """
 NAME: Change Implementation Procedures to PDF
 FILE: cip.py
 FILE: 085-PDF-ReportLab-Code2PDF.py
 FILE: 087-PDF-ReportLab-NetConf2PDF.py
+NOTE: ====== FUNCTIONAL DRAFT ONLY :-) ===========
 
 DESCRIPTION:
   Converts Configuration Implementation Procedure File into PDF.
@@ -32,6 +33,10 @@ INPUT FORMAT:
  #=nofix - suppress yellow markers
  #=head Chapter 1 - prints a label "Chapter 1"
  #=cut - suppress following lines (default)
+
+PREREQUISITIES:
+  pip2 install reportlab
+  pip2 install svglib3
 
 SEE ALSO:
   https://github.com/ondrej-duras
@@ -58,6 +63,7 @@ MODE_DEBUG = ""
 
 FILE_INPUT  = ""
 FILE_OUTPUT = ""
+FLAG_OUTPUT = 0
 fhin  = None
 fhout = None
 
@@ -67,10 +73,15 @@ fhout = None
 
 # That registers a font ...but also it attaches whole font into the PDF file
 # .... so PDF file size increases significanly with each font used.
-pdfmetrics.registerFont(TTFont('Courier', 'cour.ttf'))
+#pdfmetrics.registerFont(TTFont('Courier', 'cour.ttf'))
+pdfmetrics.registerFont(TTFont('code', 'cour.ttf'))
+
+
 #pdfmetrics.registerFont(TTFont('Times', 'Times.ttf'))
-pdfmetrics.registerFont(TTFont('Verdana', 'Verdana.ttf'))
+#pdfmetrics.registerFont(TTFont('Verdana', 'Verdana.ttf'))
 #pdfmetrics.registerFont(TTFont('Bookman', 'BOOKOS.TTF'))
+
+pdfmetrics.registerFont(TTFont('text', 'BOOKOS.TTF'))
 
 # A4: sirka=595 vyska=841
 pageWidth,pageHeight=A4
@@ -137,14 +148,26 @@ def interface():
 
 def pdfExport(FILE_INPUT,FILE_OUTPUT):
   global fhin,fhout
-
-  fhin  = open(FILE_INPUT,"r")
-  fhout = canvas.Canvas(FILE_OUTPUT,pagesize=A4) 
+  
+  try:
+    fhin  = open(FILE_INPUT,"r")
+  except:
+    print "#: Error: Cannot ope input file '%s' !" % (FILE_INPUT)
+    exit(1)
+  if FILE_OUTPUT:
+    try:
+      fhout = canvas.Canvas(FILE_OUTPUT,pagesize=A4) 
+      FLAG_OUTPUT = 1
+    except:
+      print "#: Error: Close the PDF file '%' !" % (FILE_OUTPUT)
+      exit(2)
+  else: 
+    fhout = None # temporarily
 
   PGNUM=1
   fhout.setStrokeColorRGB(0,0,0)
   fhout.setFillColorRGB(0,0,0)
-  fhout.setFont("Courier", 10)
+  fhout.setFont("code", 10)
   bgline  = 820    # 1st line Y-coordinates / bottom-left point of the first letter is going to be printed at 20,820
   DIRTY   = 0      # =1 means there was printed something on the page already (DIRTY page)
   HASH    = 1      # 0= skips all lines matching /^#/
@@ -152,22 +175,33 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
   FIX     = "<<<"  # "FIX" line - yellow background
   MODE    = 'cut'
 
-  for line in fhin:
+  #for line in fhin:
+  #  line = line.rstrip() # equivalent to chomp()
+  line = "."
+  fflag = True
+  while fflag:
+    try:
+      line = fhin.readline()
+      if line == "":
+        fflag = False
+        break
+      line = line.rstrip()
+    except:
+      break
 
-    line = line.rstrip() # equivalent to chomp()
     if re.match("#=",line):
       # POD - Plain Old Documentation Tags 
       if re.match('#=code',line):    # next lines are CODE
         fhout.setStrokeColorRGB(0,0,0)
         fhout.setFillColorRGB(0,0,0)
-        fhout.setFont("Courier", 10)
+        fhout.setFont("code", 10)
         MODE='code'
         continue
 
       if re.match('#=text',line):    # next lines are TEXT
         fhout.setStrokeColorRGB(0,0,0.5)
         fhout.setFillColorRGB(0,0,0.5)
-        fhout.setFont("Verdana", 10)
+        fhout.setFont("text", 10)
         MODE='text'
         continue
 
@@ -179,11 +213,11 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
         if MODE == 'code':
           fhout.setStrokeColorRGB(0,0,0)
           fhout.setFillColorRGB(0,0,0)
-          fhout.setFont("Courier", 10)
+          fhout.setFont("code", 10)
         if MODE == 'text':
           fhout.setStrokeColorRGB(0,0,0.5)
           fhout.setFillColorRGB(0,0,0.5)
-          fhout.setFont("Verdana", 10)
+          fhout.setFont("text", 10)
         continue
 
       if re.match('#=cut',line):       # next lines are skipped / not exported to PDF
@@ -211,7 +245,9 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
 
       if re.match('#=head',line):      # Prints a Head or Label
         # removing a TAG name
-        HEAD = re.sub("^#=head","",line)
+        #HEAD = re.sub("^#=head","",line)
+        HEAD = fhin.readline().rstrip()
+        fhout.saveState()
         #fhout.setStrokeColorRGB(0.75,0.75,0.7)
         fhout.setStrokeColorRGB(0.95,0.95,0.9)
         fhout.setFillColorRGB(0.95,0.95,0.9)
@@ -222,16 +258,17 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
         #fhout.setFillColorRGB(0.3,0.3,0)
         fhout.setStrokeColorRGB(0.1,0.1,0.3)
         fhout.setFillColorRGB(0.1,0.1,0.3)
-        fhout.setFont("Verdana", 14)
+        fhout.setFont("text", 14)
         # printing a HEAD/LABEL onto paper
         fhout.drawString(20,bgline-10,HEAD); DIRTY=1
         # returns previous color
-        if MODE == "text":
-          fhout.setStrokeColorRGB(0,0,0.5)
-          fhout.setFillColorRGB(0,0,0.5)
-        if MODE == "code":
-          fhout.setStrokeColorRGB(0,0,0)
-          fhout.setFillColorRGB(0,0,0)
+        fhout.restoreState()
+        #if MODE == "text":
+        #  fhout.setStrokeColorRGB(0,0,0.5)
+        #  fhout.setFillColorRGB(0,0,0.5)
+        #if MODE == "code":
+        #  fhout.setStrokeColorRGB(0,0,0)
+        #  fhout.setFillColorRGB(0,0,0)
         # line feeding (extra 10pc)
         bgline = bgline - 20
         if bgline < 20:
@@ -240,6 +277,41 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
           fhout.showPage()
           DIRTY = 0
 
+      if re.match('#=pdfoutput',line):   # destination file for output
+        # flushing existing output into previous PDF file
+        if DIRTY:
+          fhout.showPage()
+        try:
+          print "Writing file '%'" % (FILE_OUTPUT)
+          fhout.save()
+        except:
+          print "# Error: The file '%s' is not writable ! #1" % (FILE_OUTPUT)
+        
+        # Opens a NEW PDF file  
+        FILE_OUTPUT = re.sub("^#=pdfoutput\s+","",line)
+        if FILE_OUTPUT:
+          try:
+            fhout = canvas.Canvas(FILE_OUTPUT,pagesize=A4) 
+            FLAG_OUTPUT = 1
+          except:
+            print "#: Error: Close the PDF file '%' !" % (FILE_OUTPUT)
+            exit(2)
+        else: 
+          fhout = None # temporarily
+
+        # Starting 1st page of new file
+        bgline = 820
+        PGNUM = PGNUM + 1
+        DIRTY = 0
+        if MODE == 'code':
+          fhout.setStrokeColorRGB(0,0,0)
+          fhout.setFillColorRGB(0,0,0)
+          fhout.setFont("code", 10)
+        if MODE == 'text':
+          fhout.setStrokeColorRGB(0,0,0.5)
+          fhout.setFillColorRGB(0,0,0.5)
+          fhout.setFont("text", 10)
+        continue 
 
     # skipping lines in "=cut" mode and HASH notes 
     if MODE == 'cut': continue 
@@ -248,30 +320,34 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
     # Drawing yellow rectangle under text / yellow marker / FIX
     if FIX and (FIX in line):
       line = line.replace(FIX,'')
+      fhout.saveState()
       fhout.setStrokeColorRGB(1.0,1.0,0.8)
       fhout.setFillColorRGB(1.0,1.0,0.8)
       fhout.rect(17,bgline-1,595-17-17,8, fill=1)
       # returns previous color
-      if MODE == "text":
-        fhout.setStrokeColorRGB(0,0,0.5)
-        fhout.setFillColorRGB(0,0,0.5)
-      if MODE == "code":
-        fhout.setStrokeColorRGB(0,0,0)
-        fhout.setFillColorRGB(0,0,0)
+      fhout.restoreState()
+      #if MODE == "text":
+      #  fhout.setStrokeColorRGB(0,0,0.5)
+      #  fhout.setFillColorRGB(0,0,0.5)
+      #if MODE == "code":
+      #  fhout.setStrokeColorRGB(0,0,0)
+      #  fhout.setFillColorRGB(0,0,0)
 
 
     # highlingthing comments
     if COMMENT and re.match("\s*[%s]" % (COMMENT),line):
-      fhout.setStrokeColorRGB(0.5,0,0)
-      fhout.setFillColorRGB(0.5,0,0)
+      fhout.saveState()
+      fhout.setStrokeColorRGB(0.7,0,0)
+      fhout.setFillColorRGB(0.7,0,0)
       fhout.drawString(20,bgline,line); DIRTY=1
       # returns previous color
-      if MODE == "text":
-        fhout.setStrokeColorRGB(0,0,0.5)
-        fhout.setFillColorRGB(0,0,0.5)
-      if MODE == "code":
-        fhout.setStrokeColorRGB(0,0,0)
-        fhout.setFillColorRGB(0,0,0)
+      fhout.restoreState()
+      #if MODE == "text":
+      #  fhout.setStrokeColorRGB(0,0,0.5)
+      #  fhout.setFillColorRGB(0,0,0.5)
+      #if MODE == "code":
+      #  fhout.setStrokeColorRGB(0,0,0)
+      #  fhout.setFillColorRGB(0,0,0)
     else:  
       # standard color
       fhout.drawString(20,bgline,line); DIRTY=1
@@ -283,15 +359,19 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
       if MODE == 'code':
         fhout.setStrokeColorRGB(0,0,0)
         fhout.setFillColorRGB(0,0,0)
-        fhout.setFont("Courier", 10)
+        fhout.setFont("code", 10)
       if MODE == 'text':
         fhout.setStrokeColorRGB(0,0,0.5)
         fhout.setFillColorRGB(0,0,0.5)
-        fhout.setFont("Verdana", 10)
+        fhout.setFont("text", 10)
       DIRTY = 0
 
   if DIRTY: fhout.showPage()
-  fhout.save()
+  try:
+    print "Writing file '%s'" % (FILE_OUTPUT)
+    fhout.save()
+  except:
+    print "# Error: The file '%s' is not writable !" % (FILE_OUTPUT)
   fhin.close()
 
 
@@ -300,8 +380,12 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
 
 if __name__ == "__main__":
   interface()
-  if (not FILE_INPUT) or (not FILE_OUTPUT):
-    print "#! Error: input or output file name was not given !\n";
+  #if (not FILE_INPUT) or (not FILE_OUTPUT):
+  #  print "#! Error: input or output file name was not given !\n";
+  #  exit(1)
+  #pdfExport(FILE_INPUT,FILE_OUTPUT)
+  if (not FILE_INPUT):
+    print "#! Error: input file name was not given !\n";
     exit(1)
   pdfExport(FILE_INPUT,FILE_OUTPUT)
 
