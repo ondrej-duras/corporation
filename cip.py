@@ -3,7 +3,7 @@
 
 ## Manual ############################################################# {{{ 1
 
-VERSION = 2019.060301
+VERSION = 2019.061701
 MANUAL  = """
 NAME: Change Implementation Procedures to PDF
 FILE: cip.py
@@ -33,6 +33,7 @@ INPUT FORMAT:
  #=nofix - suppress yellow markers
  #=head Chapter 1 - prints a label "Chapter 1"
  #=cut - suppress following lines (default)
+ #=pdfoutput <file> - saves exiting output and open new <file>
 
 PREREQUISITIES:
   pip2 install reportlab
@@ -149,31 +150,33 @@ def interface():
 def pdfExport(FILE_INPUT,FILE_OUTPUT):
   global fhin,fhout
   
-  try:
-    fhin  = open(FILE_INPUT,"r")
-  except:
-    print "#: Error: Cannot ope input file '%s' !" % (FILE_INPUT)
-    exit(1)
-  if FILE_OUTPUT:
-    try:
-      fhout = canvas.Canvas(FILE_OUTPUT,pagesize=A4) 
-      FLAG_OUTPUT = 1
-    except:
-      print "#: Error: Close the PDF file '%' !" % (FILE_OUTPUT)
-      exit(2)
-  else: 
-    fhout = None # temporarily
-
-  PGNUM=1
-  fhout.setStrokeColorRGB(0,0,0)
-  fhout.setFillColorRGB(0,0,0)
-  fhout.setFont("code", 10)
   bgline  = 820    # 1st line Y-coordinates / bottom-left point of the first letter is going to be printed at 20,820
+  PGNUM   = 0      # page counter
   DIRTY   = 0      # =1 means there was printed something on the page already (DIRTY page)
   HASH    = 1      # 0= skips all lines matching /^#/
   COMMENT = '#!;'  # command line delimiters for comment highlighting
   FIX     = "<<<"  # "FIX" line - yellow background
   MODE    = 'cut'
+
+  try:
+    fhin  = open(FILE_INPUT,"r")
+  except:
+    print "#: Error: Cannot ope input file '%s' #1st !" % (FILE_INPUT)
+    exit(1)
+  if FILE_OUTPUT:
+    try:
+      fhout = canvas.Canvas(FILE_OUTPUT,pagesize=A4) 
+      FLAG_OUTPUT = 1
+      PGNUM=1
+      fhout.setStrokeColorRGB(0,0,0)
+      fhout.setFillColorRGB(0,0,0)
+      fhout.setFont("code", 10)
+    except:
+      print "#: Error: Close the PDF file '%' #2nd !" % (FILE_OUTPUT)
+      exit(2)
+  else: 
+    fhout = None # temporarily
+
 
   #for line in fhin:
   #  line = line.rstrip() # equivalent to chomp()
@@ -188,6 +191,12 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
       line = line.rstrip()
     except:
       break
+
+    # while there is none output file defined yet,
+    # then prevent another attempt to inpetpret a line
+    if fhout == None:
+      if not re.match('#=pdfoutput',line):
+         continue
 
     if re.match("#=",line):
       # POD - Plain Old Documentation Tags 
@@ -279,25 +288,32 @@ def pdfExport(FILE_INPUT,FILE_OUTPUT):
 
       if re.match('#=pdfoutput',line):   # destination file for output
         # flushing existing output into previous PDF file
-        if DIRTY:
-          fhout.showPage()
-        try:
-          print "Writing file '%'" % (FILE_OUTPUT)
-          fhout.save()
-        except:
-          print "# Error: The file '%s' is not writable ! #1" % (FILE_OUTPUT)
+        # of course, if any file has been opened
+        if fhout:
+          if DIRTY:
+            fhout.showPage()
+            DIRTY = 0
+          try:
+            print "Writing file '%s'" % (FILE_OUTPUT)
+            fhout.save()
+          except:
+            print "# Error: The file '%s' is not writable ! #3x" % (FILE_OUTPUT)
         
         # Opens a NEW PDF file  
         FILE_OUTPUT = re.sub("^#=pdfoutput\s+","",line)
         if FILE_OUTPUT:
           try:
+            print "Trying open new '%s' file..." % (FILE_OUTPUT)
             fhout = canvas.Canvas(FILE_OUTPUT,pagesize=A4) 
             FLAG_OUTPUT = 1
           except:
             print "#: Error: Close the PDF file '%' !" % (FILE_OUTPUT)
             exit(2)
+          else:
+            print "File '%s' opened." % (FILE_OUTPUT)
         else: 
           fhout = None # temporarily
+          continue
 
         # Starting 1st page of new file
         bgline = 820
