@@ -1,11 +1,12 @@
 #!/bin/bash
+# 2020051701, dury
 
 export DEVIP=$1
 export PUTTY=`echo $SSH_TTY|sed 's/[^0-9]//g'`
 printf "\033]0;[%s] %s\007" "${PUTTY}" "${DEVIP}"
 
 # PWA_CPES used (2)
-if   [ ! -z "${PWA_USER}" ]; then
+if   [ ! -z "${PWA_CPES}" ]; then
   export G1_USER=`pwa -D ${PWA_CPES}|awk -F: '{print $2}'`
   sshpass -p `pwa -D ${PWA_CPES}|awk -F: '{print $3}'` \
   ssh -tt -o PubKeyAuthentication=no -l ${G1_USER} ${DEVIP}
