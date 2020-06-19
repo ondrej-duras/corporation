@@ -1,5 +1,5 @@
 #=vim source $VIM/itn-dc.vim
-# version 2020.061901
+# version 2020.061902
 
 [Targets]
 c:\usr\bin     Binaries
@@ -164,6 +164,5 @@ bf6bd8092855119e603262fae0602edc150b1cd1 wireshark.cmd
 21a9a525fc11b090e86e1e5e13a4dfb0828713f8 wlc.cmd
 e73d37a2484e07b28031350699bf1316d6837b3d wrap.pl
 53f36e19456fe32dd7ee2bca2e9a4fd8aa5fac14 xxd.exe
-53f36e19456fe32dd7ee2bca2e9a4fd8aa5fac14 xxd_gvim.exe
 
 # --- end ---
