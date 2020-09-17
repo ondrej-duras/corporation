@@ -7,7 +7,8 @@ fi
 ARG1=$1
 ARG2=$2
 #MD5SELF='aee7651569ced1ec94061319389db642  -'
-MD5SELF='f2b5c91effc548903d97be8accf0d57a  -'
+#MD5SELF='f2b5c91effc548903d97be8accf0d57a  -'
+MD5SELF='66e9fd4c6aa425187a135c221c4d5b8d  -'
 
 # --- begin ---
 ## older 1st method ... works also :-) (1)
@@ -41,7 +42,8 @@ MD5SELF='f2b5c91effc548903d97be8accf0d57a  -'
 ##!/bin/bash
 
 #VERSION=2017.110701 
-VERSION=2020.051701 
+#VERSION=2020.051701 
+VERSION=2020.091701 
 function manual() {
 cat <<__MANUAL__
 NAME: Prepare Credentials
@@ -60,11 +62,12 @@ DESCRIPTION:
 
 USAGE:
   . prepare --help # for this manual page
-  . prepare.sh     # to enter PE credentials
-  . prepare.sh -c  # to enter CPE credentials
-  . prepare.sh -a  # to enter both PE and CPE credentials
-  . prepare.sh -l  # to enter legacy SSHUSER and SSHPASS
-  . prepare.sh -w  # to enter WiFi credentials
+  . prepare.sh     # to enter PE credentials (G0)
+  . prepare.sh -c  # to enter CPE credentials (G1)
+  . prepare.sh -a  # to enter both PE and CPE credentials (G0 and G1)
+  . prepare.sh -l  # to enter legacy SSHUSER and SSHPASS (G2)
+  . prepare.sh -w  # to enter WiFi credentials (G3)
+  . prepare.sh -e  # to enter Extra credentials (G4) (no --update)
   . prepare.sh -a --update # re-enter digest of all credentials
   . prepare.sh -c --update # re-enter digest of CPE credentials only
   . prepare.sh -w --update # re-enter digest of WiFi credentials only
@@ -108,16 +111,19 @@ if [ "${ARG1}" == "--check" ]; then
   ENTRY_G1="no"
   ENTRY_LEGACY="no"  # alias for ENTRY_G2
   ENTRY_G3="no"
+  ENTRY_G4="no"
 fi
 if [ "${ARG1}" == "--test" ]; then
   ENTRY_G0="no"
   ENTRY_G1="no"
   ENTRY_LEGACY="no"  # alias for ENTRY_G2
   ENTRY_G3="no"
+  ENTRY_G4="no"
 fi
 if [ "${ARG1}" == "-c" ]; then
   ENTRY_G0="no"
   ENTRY_G3="no"
+  ENTRY_G4="no"
   ENTRY_G1="yes"
   ENTRY_LEGACY="no"  # G2
 fi
@@ -125,6 +131,7 @@ if [ "${ARG1}" == "-a" ]; then
   ENTRY_G0="yes"
   ENTRY_G1="yes"
   ENTRY_G3="no"
+  ENTRY_G4="no"
   ENTRY_LEGACY="no"  # G2
 fi
 if [ "${ARG1}" == "-l" ]; then
@@ -132,13 +139,23 @@ if [ "${ARG1}" == "-l" ]; then
   ENTRY_G1="no"
   ENTRY_LEGACY="yes" # G2
   ENTRY_G3="no"
+  ENTRY_G4="no"
 fi
 if [ "${ARG1}" == "-w" ]; then
   ENTRY_G0="no"
   ENTRY_G1="no"
   ENTRY_LEGACY="no"  # G2
   ENTRY_G3="yes"
+  ENTRY_G4="no"
 fi
+if [ "${ARG1}" == "-e" ]; then
+  ENTRY_G0="no"
+  ENTRY_G1="no"
+  ENTRY_LEGACY="no"  # G2
+  ENTRY_G3="no"
+  ENTRY_G4="yes"
+fi
+
 
 
 # Providing standard manual page --help
@@ -189,6 +206,12 @@ fi
 # WiFi credentials - always both: login and password as well
 if [ "${ENTRY_G3}" == "yes" ]; then
     export PWA_WIFI=`pwa -u wifi -L -P1 -pwa -nowr`
+fi
+
+# Extra credentials - always both: login and password as well
+# Password must be etnterd twice ..as to confirm
+if [ "${ENTRY_G4}" == "yes" ]; then
+    export PWA_EXTA=`pwa -u exta -L -P2 -pwa -nowr`
 fi
 
 
@@ -306,6 +329,14 @@ if [ "${LEGACY}" == "no" ]; then
     
     unset G3_USER G3_PASS G3_CREAT G3_CREDIG
 
+  fi
+
+  # ---
+
+  if [ -z "${PWA_EXTA}" ]; then
+    echo "(G4) PWA_EXTA ............ none."
+  else
+    echo "(G4) PWA_EXTA ............ ok."
   fi
 
 fi
