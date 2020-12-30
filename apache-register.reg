@@ -94,6 +94,16 @@ Windows Registry Editor Version 5.00
 ;;     Require all granted
 ;; </Directory>
 ;; 
+;; IndexIgnore .[^.]* ~* *.OFF 
+;; IndexOptions -FancyIndexing +FoldersFirst NameWidth=43
+;; Alias /prog "c:/usr/prog/"
+;; <Directory "c:/usr/prog">
+;;     AddType text/plain .c .cpp .asm .s .asc
+;;     Options +Indexes +FollowSymLinks +ExecCGI
+;;     AllowOverride None
+;;     Require all granted
+;; </Directory>
+;;
 ;; <IfModule dir_module>
 ;;    DirectoryIndex index.run index.htm index.html index.pl index.py
 ;; </IfModule>
