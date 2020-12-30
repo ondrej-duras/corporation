@@ -1,0 +1,108 @@
+Windows Registry Editor Version 5.00
+; apache-register.reg
+; 20201229, Ing. Ondrej DURAS (dury)
+; ## Registry Config #################################################### {{{ 1
+
+; Zasah do registrov a fragment konfiguracie Apache
+; pre notebook s windows ... nutna minimalka na testovanie
+; Toto tu mozno priamo importnut prikazom
+; Administrator:C:\> regedit.exe apache-register.reg
+
+; Oj nestastie ten Windows, velke nestastie ...
+; rychlovecka na treningovy Apache pod Windowsami 
+; bindnuty na lokalne dostupny 127.0.0.1 / localhost
+
+; PERL CGI Scripts executed from Apache
+[HKEY_CLASSES_ROOT\.pl\Shell\ExecCGI\Command]
+@="c:\\opt\\perl\\perl\\bin\\perl.exe"
+
+; CGI boli historicky povacsinou PERLovske scripty
+[HKEY_CLASSES_ROOT\.cgi\Shell\ExecCGI\Command]
+@="c:\\opt\\perl\\perl\\bin\\perl.exe"
+
+; spatna compatibilita s CGI scriptami z rokov 2002 - 2015
+[HKEY_CLASSES_ROOT\.run\Shell\ExecCGI\Command]
+@="c:\\opt\\perl\\perl\\bin\\perl.exe"
+
+; Python v2/v3 CGI scripts executed from Apache via Python-Launcher
+; Python version must be distinguished via shebang in the first line of each script
+[HKEY_CLASSES_ROOT\.py\Shell\ExecCGI\Command]
+@="c:\\Windows\\py.exe"
+
+; Native Python v3 CGI scripts executed from Apache
+[HKEY_CLASSES_ROOT\.py3\Shell\ExecCGI\Command]
+@="c:\\opt\\Python38\\python.exe"
+
+; Native Python v2 CGI scripts executed from Apache
+[HKEY_CLASSES_ROOT\.py2\Shell\ExecCGI\Command]
+@="c:\\opt\\Python27\\python.exe"
+
+; Native PHP (v7) CGI scripts executed from Apache
+; ... this way is profiled for workstation, where is no optimization for WebServices
+[HKEY_CLASSES_ROOT\.php\Shell\ExecCGI\Command]
+; @="c:\\opt\\php\\php.exe"
+@="c:\\opt\\php\\php-cgi.exe"
+
+
+; ####################################################################### }}} 1
+; ## HTTPD.CONF - Apache 2.4 Configuration ############################## {{{ 1
+;
+;; ; rozbalit httpd-xy.zip do c:\opt\Apache24\
+;; ; rozbalit php-xy.zip do c:\opt\php
+;; ; Podla nasledovneho nastavit c:\opt\Apache24\conf\httpd.conf
+;; ; c:\opt\Apache24\bin\httpd.exe -k install
+;; ; c:\opt\Apache24\bin\httpd.exe -k start
+;;
+;; ; Je to konfiguracia, ktora by samovolne mala zrat zdrojov co najmenej
+;; ; naopak pre masivne vyuzivanie Apacha to velmi stavane nieje
+;; 
+;; Define SRVROOT "/opt/Apache24"
+;; ServerRoot "${SRVROOT}"
+;; PidFile "/usr/logs/httpd.pid"
+;; ; Nasledovne zabezpeci, ze v scriptoch je ignorovany shebang #!
+;; ; Miesto toho sa hladi do registrov 
+;; ; [HKEY_CLASSES_ROOT\.PRIPONA\Shell\ExecCGI\Command]
+;; ScriptInterpreterSource Registry-Strict
+;; 
+;; 
+;; Define ENABLE_TLS13 "Yes"
+;; Listen 127.0.0.1:80
+;; ServerAdmin admin@example.com
+;; ServerName localhost:80
+;; 
+;; <Directory />
+;;     AllowOverride none
+;;     Require all denied
+;; </Directory>
+;; 
+;; 
+;; AddHandler cgi-script .cgi .pl .run .py .py2 .py3 .exe
+;; <Directory "/opt/php">
+;;     Options -Indexes +FollowSymLinks +ExecCGI
+;;     AllowOverride None
+;;     Require all granted
+;; </Directory>
+;; ScriptAlias /php/ "/opt/php/"
+;; AddType application/x-httpd-php .php
+;; Action application/x-httpd-php "/php/php-cgi.exe"
+;; 
+;; 
+;; DocumentRoot "/usr/html"
+;; <Directory "/usr/html">
+;;     Options +Indexes +FollowSymLinks +ExecCGI
+;;     AllowOverride None
+;;     Require all granted
+;; </Directory>
+;; 
+;; <IfModule dir_module>
+;;    DirectoryIndex index.run index.htm index.html index.pl index.py
+;; </IfModule>
+;; 
+;; <Files ".ht*">
+;;     Require all denied
+;; </Files>
+;; 
+;; ErrorLog "/usr/logs/error.log"
+;; LogLevel info
+; --- end ---
+
