@@ -9,7 +9,7 @@ use warnings;
 
 ## MANUAL ############################################################# {{{ 1
 
-our $VERSION = 2017.122705;
+our $VERSION = 2021.032201;
 our $MANUAL  = <<__MANUAL__;
 NAME: IPIN
 FILE: ipin.pl
@@ -30,6 +30,7 @@ USAGE:
   ipin --contained 10.28.17.10/28 -search config.txt --gw
   ipin --includes 172.20.36.123/24 -grep config.txt
   ipin --include 10.0.0.0/8 -f5 --grep viprion-one-line.txt
+  ipin --range 172.20.36.123/27
 
 
 PARAMETERS:
@@ -44,6 +45,7 @@ PARAMETERS:
   --gw / --zero   includes 0.0.0.0 (usefull with --contained)
   --no-gw         excludes 0.0.0.0 (default / usefull with --contained)
   --f5            removes F5 routing domains from IP addresses
+  --range         provides a range of usefull IPs (Net+4 -dash- Broadcast-1)
 
 SEE ALSO:
   https://github.com/ondrej-duras/
@@ -283,6 +285,7 @@ our $IPIN_GRP = "";    # --grep <file>
 our $IPIN_LIN = 0;     # --line =1 / --no-line =0
 our $IPIN_DGW = 0;     # --gw =1 --zero =1 --no-gw =0 --no-zero =0
 our $IPIN_F5M = 0;     # --f5 --bigip -rd
+our $IPIN_RNG = 0;     # --range
 our $MODE_VERBOSE = 0; # 0-silent 1-full listing
 our $FFLAG = 0; 
 our @ALIST=(); # list of IP addresses
@@ -306,6 +309,7 @@ while(my $ARGX = shift @ARGV) {
   if($ARGX =~ /^-+c/) { $IPIN_CON = shift @ARGV; next; }# --contained
   if($ARGX =~ /^-+d/) { $IPIN_DTL = 1; next; }          # --details
   if($ARGX =~ /^-+n/) { $IPIN_NET = 1; next; }          # --network
+  if($ARGX =~ /^-+r/) { $IPIN_RNG = 1; next; }          # --range
   if($ARGX =~ /^-+g/) { $IPIN_GRP = shift @ARGV; next; }# --grep <file>
   if($ARGX =~ /^-+s/) { $IPIN_SRC = shift @ARGV; next; }# --search <file>
   if($ARGX =~ /^[0-9]{1,3}(\.[0-9]{1,3}){3}$/) { push @ALIST,$ARGX; next; }
@@ -368,6 +372,40 @@ if($IPIN_DTL) {
     print "Last Usable IP address .... " . ipin2dot($LST) ."\n" if $HBT > 2;
     print "Usable IP addresses ....... " . $URG ."\n" if $HBT > 2;
     print "Broadcast address ......... " . ipin2dot($BCS) ."\n\n";
+  }
+}
+
+if($IPIN_RNG) {
+  foreach my $XIP (@ALIST) {
+    my $BIP = ipin2bin($XIP);
+    my $BMS = ipin2mask($XIP);
+    my $NEG = 0xffffffff - $BMS;
+    my $NIP = $BIP & $BMS;
+    my $BCS = $BIP | $NEG;
+    my $GWA = $NIP +1;
+    my $ND1 = $NIP +2;
+    my $ND2 = $NIP +3;
+    my $FST = $NIP +4;
+    my $LST = $BCS -1;
+    my $HBT = 0;
+    my $BXX = $NEG;
+    while($BXX > 0 ) { $HBT++; $BXX=$BXX>>1; }
+    my $NBT = 32 - $HBT;
+    my $URG = ipin2dot($FST) . "-" . ipin2dot($LST);
+    if(($HBT>2) && ($HBT<9)) {
+      my $LOC = ipin2dot($LST); $LOC=~s/.*\.//;
+      $URG = ipin2dot($FST) . "-" . $LOC;
+    }
+    if($HBT<3) { $URG = "none"; }
+    if( -t STDOUT) {
+      print "${URG}\n";
+    } else {
+      if(scalar(@ALIST) == 1) {
+        print "${URG}";
+      } else {
+        print "${URG}\n";
+      }
+    }
   }
 }
 
