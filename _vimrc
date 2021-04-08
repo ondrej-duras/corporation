@@ -2,8 +2,9 @@
 " _VIMRC - Common VIM Configuration File for Windows x86 platform
 " 20140625, Ing. Ondrej DURAS (dury)
 " $VIM\_vimrc
-" VERSION=2021.020901
+" VERSION=2021.040701
 
+set noswapfile
 set ruler
 set nowrap
 syntax clear
