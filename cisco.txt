@@ -1,0 +1,37 @@
+interface
+port-channel
+switchport
+trunk
+access
+allowed
+vlan
+15962
+configure terminal
+exit
+end
+copy running-config startup-config
+
+
+interface Ethernet
+  description
+  no cdp enable
+  switchport access vlan
+  spanning-tree port type edge
+
+
+interface port-channel
+  description
+  switchport
+  switchport mode trunk
+  switchport trunk native vlan 4092
+  switchport trunk allowed vlan
+  spanning-tree port type edge
+  vpc
+
+
+interface Ethernet
+  description 
+  channel-group force mode active
+
+show port-channel summary | include ^[0-9]+
+
