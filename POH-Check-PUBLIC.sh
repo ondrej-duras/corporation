@@ -120,7 +120,7 @@ do
   sshAction ${HOST}
 done
 echo "done."
-echo "Please send whole file ${FILE} to -ITN-N-NFVI <ITN-N-NFVI@orange.sk>"
+echo "Please send whole file ${FILE} to anything@anything.com"
 echo "Thanks a lot."
 
 ####################################################################### }}} 1
