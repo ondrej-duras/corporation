@@ -5,7 +5,7 @@
 ## MANUAL ############################################################# {{{ 1
 
 
-VERSION = "2021.080301"
+VERSION = "2021.090201"
 MANUAL  = """
 NAME: Drawing
 FILE: drawing.py
@@ -54,6 +54,8 @@ SEE ALSO:
 # @rem for /F "tokens=*" %%D IN ('ls -w1 *Draw*.pdf | tail -1') DO @(start %%D)
 # ls -w1 *Draw*.pdf | tail -1 | clip
 # paste
+# ...adding to .ZIP
+# 7za a -tzip e21-C-285-SE-NavstevaPapeza-2021-Config.zip *.txt
 
 import sys
 import os
@@ -69,39 +71,44 @@ sys.argv.pop(0)
 argct = len(sys.argv)
 idx = 0
 new_mode = False # causes to copy new Drawing from template
+action = "view"  # view(PDF) edit(VSDX) zip(adding to .ZIP)
+zipfile = ""
 
 ####################################################################### }}} 1
 ## PARAMETERS / CLI ################################################### {{{ 1
 
 while idx < argct:
   argx = sys.argv[idx]
-  if re.match("-+ed",argx):   extension = "vsdx"; idx += 1; continue
+  if re.match("-+ed",argx):   action = "edit"; extension = "vsdx"; idx += 1; continue
   if re.match("-+ex",argx):   extension = sys.argv[idx+1]; idx += 2; continue
   if re.match("-+m",argx):    filemask  = sys.argv[idx+1]; idx += 2; continue
   if re.match("-+[h?]",argx): print MANUAL; exit()
-  if re.match("-+n",argx):    filemask  = sys.argv[idx+1]; idx += 2; new_mode = True; continue
+  if re.match("-+n",argx):    action = "new"; filemask  = sys.argv[idx+1]; idx += 2; new_mode = True; continue
+  if re.match("-+z",argx):    action = "zip"; zipfile = sys.argv[idx+1]; idx +=2; continue
+
   filemask = argx ; idx += 1
 
 ####################################################################### }}} 1
 ## MAIN ############################################################### {{{ 1
 
 # discovering current directory
-print "File mask ................ " + filemask + ".*\." + extension
-print "Total files found ........ " + str(len(dircontent))
+print "File mask ..................... " + filemask + ".*\." + extension
+print "Total files found ............. " + str(len(dircontent))
 drawings = [ str(f) for f in dircontent if re.match(filemask + ".*" + r"\." + extension,f) ]
-print "Matching files found ..... " + str(len(drawings))
+print "Matching files found .......... " + str(len(drawings))
 
 # Creating new file
-if new_mode:
+#if new_mode:
+if action == "new":
   # preparing filenames
-  print "Template ................. " + template
+  print "Template .................... " + template
   if not os.path.exists(template):
     print "Error: None template '%s' found !" % (template); exit()
   # check existing drawings (should not for -new)
   if len(drawings) > 0:
     print "Error: some drawings exist already. Use -edit !"
   new_file = filemask + "-Drawing-" + datetime.datetime.today().strftime("%Y%m%d-1.vsdx")
-  print "New file ................. " + new_file
+  print "New file .................... " + new_file
   if os.path.exists(new_file):
     print "Error: File '%s' exists already !" % (new_file)
     exit()
@@ -116,9 +123,21 @@ if len(drawings) == 0:
   print "Error: None drawing file found."; exit(1);
 drawings.sort()
 MyFile = drawings[-1]
-print "Trying to open ........... " + MyFile
-os.system("start " + MyFile)
-exit()
+if action == "view":
+  print "Trying to open for view ..... " + MyFile
+  os.system("start " + MyFile)
+  exit()
+
+if action == "edit":
+  print "Trying to open for view ..... " + MyFile
+  os.system("start " + MyFile)
+  exit()
+
+if action == "zip":
+  print "Archiving to .ZIP file ..... " + MyFile
+  os.system("7za a -tzip %s %s" % (zipfile,MyFile))
+  exit()
+
 
 ####################################################################### }}} 1
 # --- end ---
