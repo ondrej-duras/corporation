@@ -2,7 +2,7 @@
 
 ## MANUAL ############################################################# {{{ 1
 
-VERSION = "2021.090701"
+VERSION = "2021.092701"
 MANUAL  = """
 NAME: Latest File
 FILE: latest.py
@@ -35,8 +35,8 @@ SEE ALSO:
 VERSION: %s
 """ % (VERSION)
 
-####################################################################### {{{ 1
-## GLOBALS ############################################################ }}} 1
+####################################################################### }}} 1
+## GLOBALS ############################################################ {{{ 1
 
 
 import sys
@@ -45,7 +45,9 @@ import os.path
 import re
 import datetime
 
-dircon = os.listdir(".") # DIRectory CONtent
+
+fpath  = "."
+dircon = []       # os.listdir(".") # DIRectory CONtent
 action = "file"   # actions: have a look to MANUAL:USAGE section
 extension = ".*"  # regular expression - filtering based on file extension
 fnpattern = ".*"  # file pattern
@@ -80,8 +82,9 @@ def filterPattern(dcin=dircon,fpat=fnpattern):  # filterPattern(dircon,fnpattern
 
 # provides the latest file name of matching pattern and extension
 def latestFile():
-  global action,debug,dircon,fnpattern,extension
+  global action,debug,dircon,fnpattern,extension,fpath
   fname=sorted(filterPattern(filterExtension(dircon,extension),fnpattern))[-1]
+  # fname= fpath + "/" + fname
   return fname
 
 
@@ -98,23 +101,31 @@ def splitFile(fname):
 ## ACTION ############################################################# {{{ 1
 
 def takeAction():
-  global action,debug,dircon,fnpattern,extension
+  global action,debug,dircon,fnpattern,extension,fpath
   global zipfile,copyfile
 
+  dircon = os.listdir(fpath)
+
   if action == "file":
-    fname=latestFile()
+    #fname=latestFile()
+    fname=fpath + "/" + latestFile()
     print(fname)
     exit()
 
   if action == "start":
-    fname=latestFile()
+    fname=fpath + "/" + latestFile()
     print("Opening file ... %s" % (fname))
+    if sys.platform == "win32":
+      fname = fname.replace(r"/","\\")
+      print("Fixed fname .... %s" % (fname))
     os.system("\"%s\"" % (fname))
     exit()
 
   if action == "copy":
-    fname=latestFile()
+    # fname=latestFile()
+    fname=fpath + "/" + latestFile()
     if sys.platform == "win32":
+      fname = fname.replace(r"/","\\")
       cmd="copy /Y %s %s" % (fname,copyfile)
     else:
       cmd="cp -f %s %s" % (fname,copyfile)
@@ -123,14 +134,16 @@ def takeAction():
     exit() 
 
   if action == "zip":
-    fname=latestFile()
+    # fname=latestFile()
+    fname=fpath + "/" + latestFile()
     cmd="7za a -tzip %s %s" % (zipfile,fname)
     print(cmd)
     os.system(cmd)
     exit()
 
   if action == "ver":
-    fname=latestFile()
+    # fname=latestFile()
+    fname=fpath + "/" + latestFile()
     version=splitFile(fname)[1]
     print(version)
     exit()
@@ -139,7 +152,7 @@ def takeAction():
 ## CLI ################################################################ {{{ 1
 
 def commandLine(cli=sys.argv):
-  global fnpattern,action,zipfile,copyfile,extension
+  global fnpattern,action,zipfile,copyfile,extension,fpath
   if len(cli) < 2:
      print(MANUAL)
      exit()
@@ -147,14 +160,16 @@ def commandLine(cli=sys.argv):
   cli.pop(0)
   while len(cli):
     argx = cli.pop(0)
-    if re.match("-+z",argx): action = "zip";  zipfile  = cli.pop(0); continue
-    if re.match("-+c",argx): action = "copy"; copyfile = cli.pop(0); continue
-    if re.match("-+e",argx): extension = cli.pop(0); continue
-    if re.match("-+n",argx): action = "new";   continue
-    if re.match("-+v",argx): action = "ver";   continue
-    if re.match("-+f",argx): action = "file";  continue
-    if re.match("-+s",argx): action = "start"; continue
-    if re.match("=+d",argx): debug  = "all";   continue
+    if re.match("-+z",  argx):  action = "zip";  zipfile  = cli.pop(0); continue  # -zip
+    if re.match("-+c",  argx):  action = "copy"; copyfile = cli.pop(0); continue  # -copy
+    if re.match("-+e",  argx):  extension = cli.pop(0); continue # -extension
+    if re.match("-+par",argx):  fpath  = "..";          continue # -parent ( -path .. )
+    if re.match("-+p",  argx):  fpath  = cli.pop(0);    continue # -path
+    if re.match("-+n",  argx):  action = "new";   continue       # -new
+    if re.match("-+v",  argx):  action = "ver";   continue       # -version
+    if re.match("-+f",  argx):  action = "file";  continue       # -file
+    if re.match("-+s",  argx):  action = "start"; continue       # -start ( -open )
+    if re.match("=+d",  argx):  debug  = "all";   continue       # troubleshooting
     fnpattern = argx
 
 ####################################################################### }}} 1

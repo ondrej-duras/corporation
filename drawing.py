@@ -5,7 +5,7 @@
 ## MANUAL ############################################################# {{{ 1
 
 
-VERSION = "2021.090201"
+VERSION = "2021.092701"
 MANUAL  = """
 NAME: Drawing
 FILE: drawing.py
@@ -35,6 +35,11 @@ PARAMETERS:
 
   -help - this help
 
+  -mask <fm> - file mask
+  -ext <fe>  - file extension
+  -path <fp> - file path (directory where resides)
+  -parent    - parent directory as the file path
+
   -new  - copies a template as a new file
 
 VERSION: %s
@@ -63,7 +68,8 @@ import os.path
 import re
 import datetime
 
-dircontent = os.listdir(".")
+PATH       = "."
+dircontent = [] # os.listdir(".")
 extension  = "pdf"
 filemask   = ".*Draw"
 template   = re.sub(r"py$","vsdx",__file__)
@@ -82,6 +88,8 @@ while idx < argct:
   if re.match("-+ed",argx):   action = "edit"; extension = "vsdx"; idx += 1; continue
   if re.match("-+ex",argx):   extension = sys.argv[idx+1]; idx += 2; continue
   if re.match("-+m",argx):    filemask  = sys.argv[idx+1]; idx += 2; continue
+  if re.match("-+par",argx):  PATH      = "..";            idx += 1; continue
+  if re.match("-+p",argx):    PATH      = sys.argv[idx+1]; idx += 2; continue
   if re.match("-+[h?]",argx): print MANUAL; exit()
   if re.match("-+n",argx):    action = "new"; filemask  = sys.argv[idx+1]; idx += 2; new_mode = True; continue
   if re.match("-+z",argx):    action = "zip"; zipfile = sys.argv[idx+1]; idx +=2; continue
@@ -92,6 +100,9 @@ while idx < argct:
 ## MAIN ############################################################### {{{ 1
 
 # discovering current directory
+print "DRAWING helper"
+dircontent = os.listdir(PATH)
+print "File PATH ..................... " + PATH
 print "File mask ..................... " + filemask + ".*\." + extension
 print "Total files found ............. " + str(len(dircontent))
 drawings = [ str(f) for f in dircontent if re.match(filemask + ".*" + r"\." + extension,f) ]
@@ -107,7 +118,7 @@ if action == "new":
   # check existing drawings (should not for -new)
   if len(drawings) > 0:
     print "Error: some drawings exist already. Use -edit !"
-  new_file = filemask + "-Drawing-" + datetime.datetime.today().strftime("%Y%m%d-1.vsdx")
+  new_file = PATH + "/" + filemask + "-Drawing-" + datetime.datetime.today().strftime("%Y%m%d-1.vsdx")
   print "New file .................... " + new_file
   if os.path.exists(new_file):
     print "Error: File '%s' exists already !" % (new_file)
@@ -122,7 +133,7 @@ if action == "new":
 if len(drawings) == 0:
   print "Error: None drawing file found."; exit(1);
 drawings.sort()
-MyFile = drawings[-1]
+MyFile = PATH + "/" + drawings[-1]
 if action == "view":
   print "Trying to open for view ..... " + MyFile
   os.system("start " + MyFile)

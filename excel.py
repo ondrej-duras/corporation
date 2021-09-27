@@ -10,7 +10,7 @@
 # ls -w1 *Draw*.pdf | tail -1 | clip
 # paste
 
-VERSION = "2021.090201"
+VERSION = "2021.092701"
 MANUAL  = """
 NAME: MS Excel helper
 FILE: excel.py
@@ -25,12 +25,18 @@ USAGE:
   excel.py a8 # Latest a8*.xlsx
   excel.py a8 -old # latest a8*.xls
   excel.py -old a8 # latest a8*.xls
+  excel.py -zip ARCHIVE.zip a8
 
 PARAMETERS:
   -old   - opens the latest .XLS file except 
            the latest .XLSX file  
+  -xls   - --//--
   -help  - this help
   -start - starts empty excel instance
+  -ext   - allows to specify another file extension to search
+  -zip   - adds the latest excel into specified archive
+  -path <path> - path where search a directory content
+  -parent      - will search the content in the parent directory
 
 VERSION: %s
 
@@ -45,8 +51,9 @@ import os.path
 import re
 
 EXCEL  = r"C:\Program Files (x86)\Microsoft Office\Office16\EXCEL.EXE"
+PATH   = "."
 action =  "open"
-dircontent = os.listdir(".")
+dircontent = [] # os.listdir(".")
 extension  = "xlsx"
 filemask   = ".*"
 sys.argv.pop(0)
@@ -54,10 +61,12 @@ argct = len(sys.argv)
 idx = 0
 while idx < argct:
   argx = sys.argv[idx]
-  if re.match("-+old",argx):   extension = "xls"; idx += 1; continue
-  if re.match("-+xls",argx):   extension = "xls"; idx += 1; continue
-  if re.match("-+ex",argx):    extension = sys.argv[idx+1]; idx += 2; continue
-  if re.match("-+m",argx):     filemask  = sys.argv[idx+1]; idx += 2; continue
+  if re.match("-+old",argx):   extension = "xls"; idx += 1; continue # extension mask to .xls (by default there is .xlsx
+  if re.match("-+xls",argx):   extension = "xls"; idx += 1; continue # extension mask to .xls
+  if re.match("-+ex",argx):    extension = sys.argv[idx+1]; idx += 2; continue # extension mask to <any>
+  if re.match("-+m",argx):     filemask  = sys.argv[idx+1]; idx += 2; continue # file mask
+  if re.match("-+par",argx):   PATH = ".."; idx += 1; continue  #  PATH ... file search in parent directory
+  if re.match("-+p",argx):     PATH = sys.argv[idx+1]; idx += 2; continue # <any> PATH for file search
   if re.match("-+z",argx):     action = "zip"; zipfile   = sys.argv[idx+1]; idx += 2; continue
   if re.match("-+st",argx):    action    = "start"; idx += 1; continue
   if re.match("-+[h?]",argx): print MANUAL; exit()
@@ -69,6 +78,9 @@ if action == "start":
   exit()
 
 # Trying to find the latest file - MyFile
+print "EXCEL helper"
+dircontent = os.listdir(PATH)
+print "File PATH ................ " + PATH
 print "File mask ................ " + filemask + "\." + extension
 print "Total files found ........ " + str(len(dircontent))
 drawings = [ str(f) for f in dircontent if re.match(filemask + "\." + extension,f) ]
@@ -76,7 +88,7 @@ print "Matching files found ..... " + str(len(drawings))
 if len(drawings) == 0:
   print "None drawing file found."; exit(1);
 drawings.sort()
-MyFile = drawings[-1]
+MyFile = PATH + "/" + drawings[-1]
 
 if action == "open":
   print("Trying to open ........... " + MyFile)
