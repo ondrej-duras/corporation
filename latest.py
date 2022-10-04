@@ -2,7 +2,7 @@
 
 ## MANUAL ############################################################# {{{ 1
 
-VERSION = "2021.092701"
+VERSION = "2022.100401"
 MANUAL  = """
 NAME: Latest File
 FILE: latest.py
@@ -11,14 +11,19 @@ DESCRIPTION:
   Helps to find the latest version of file
 
 USAGE:
-  latest.py a8
-  latest.py -zip Backup.ZIP a8
-  latest.py -new a8
-  latest.py -ver a8
-  latest.py -copy a8 a8-Drawing.vsdx
-  latest.py -file a8
-  latest.py -file -ext pdf
-  latest.py -start a8
+  latest.py a8  # shows filename only
+  latest.py -zip Backup.ZIP a8 # adds to archive
+  latest.py -par -zip Backup.ZIP a8 # adds drawing from parent dir to archive
+  latest.py -par -ext pdf -file a8 # provides a filename from parent dir
+  latest.py -new a8 # creates a new file ...???
+  latest.py -ver a8 # provides a lates version ID
+  latest.py -copy a8 a8-Drawing.vsdx # makes a copy to particular file
+  latest.py -file a8 # shows a file name only
+  latest.py -file -ext pdf # ... -//- , specifies a .PDF extension
+  latest.py -start a8  # opens a file, based on OS setup
+  latest.py a8 -pg 4,5 -pgout vrfXY-only  # makes vrfXY.pdf based on 4th and 5th page of a8*.pdf
+  latest.py a8 -pg 4,5 -pgout vrfXY-only -pgver # makes vrfXY-20220701-130102.pdf
+  latest.py
 
 PARAMETERS:
   -zip   - adds file to .ZIP archive
@@ -28,6 +33,11 @@ PARAMETERS:
   -file  - provides a file name of the latest file
   -start - opens the latest file via system setup
   -ext   - define a file extension
+  -par   - parent directory contains file
+  -pg    - list of pages (see pdftk manual)
+  -pages - -//-
+  -pgver - generates automated version at the end of output filename
+  -pgout - file name prefix of output file for -pg
 
 SEE ALSO:
   https://github.com/ondrej-duras/
@@ -54,6 +64,10 @@ fnpattern = ".*"  # file pattern
 copyfile= ""      # destination file to copy
 zipfile = ""      # destination archive file to archive
 debug = ""        #
+
+pages = ""        # list of pages to forward to output (see tdftk manual)
+pgoutfile = "out" # prefix of PDF output filename
+pgver = ""        # pages goes to file <pgoutfile>-<pgver>.pdf or <pgoutfile>.pdf
 
 ####################################################################### }}} 1
 ## LIBRARY ############################################################ {{{ 1
@@ -102,7 +116,7 @@ def splitFile(fname):
 
 def takeAction():
   global action,debug,dircon,fnpattern,extension,fpath
-  global zipfile,copyfile
+  global zipfile,copyfile,pages,pgoutfile,pgver
 
   dircon = os.listdir(fpath)
 
@@ -148,11 +162,22 @@ def takeAction():
     print(version)
     exit()
 
+  if action == "pages":
+    fname=latestFile()
+    output=pgoutfile
+    if pgver <> "": output+="-"+pgver
+    output+=".pdf"
+    cmd="pdftk %s cat %s output %s" % (fname,pages,output)
+    print(cmd)
+    os.system(cmd)
+    exit()
+
 ####################################################################### }}} 1
 ## CLI ################################################################ {{{ 1
 
 def commandLine(cli=sys.argv):
   global fnpattern,action,zipfile,copyfile,extension,fpath
+  global pages,pgver,pgoutfile
   if len(cli) < 2:
      print(MANUAL)
      exit()
@@ -160,16 +185,20 @@ def commandLine(cli=sys.argv):
   cli.pop(0)
   while len(cli):
     argx = cli.pop(0)
-    if re.match("-+z",  argx):  action = "zip";  zipfile  = cli.pop(0); continue  # -zip
-    if re.match("-+c",  argx):  action = "copy"; copyfile = cli.pop(0); continue  # -copy
-    if re.match("-+e",  argx):  extension = cli.pop(0); continue # -extension
-    if re.match("-+par",argx):  fpath  = "..";          continue # -parent ( -path .. )
-    if re.match("-+p",  argx):  fpath  = cli.pop(0);    continue # -path
-    if re.match("-+n",  argx):  action = "new";   continue       # -new
-    if re.match("-+v",  argx):  action = "ver";   continue       # -version
-    if re.match("-+f",  argx):  action = "file";  continue       # -file
-    if re.match("-+s",  argx):  action = "start"; continue       # -start ( -open )
-    if re.match("=+d",  argx):  debug  = "all";   continue       # troubleshooting
+    if re.match("-+z",    argx): action = "zip";  zipfile  = cli.pop(0); continue  # -zip
+    if re.match("-+c",    argx): action = "copy"; copyfile = cli.pop(0); continue  # -copy
+    if re.match("-+e",    argx): extension = cli.pop(0); continue # -extension
+    if re.match("-+pgout",argx): pgoutfile= cli.pop(0); continue # -pgout <file_prefix>
+    if re.match("-+pgver",argx): now=datetime.datetime.now(); pgver=now.strftime("%Y%m%d-%H%M%S"); continue
+    if re.match("-+pg",   argx): action ="pages"; extension=".*\.(pdf|PDF)"; pages=cli.pop(0); continue
+    if re.match("-+pages",argx): action ="pages"; extension=".*\.(pdf|PDF)"; pages=cli.pop(0); continue
+    if re.match("-+par",  argx): fpath  = "..";          continue # -parent ( -path .. )
+    if re.match("-+p",    argx): fpath  = cli.pop(0);    continue # -path
+    if re.match("-+n",    argx): action = "new";   continue       # -new
+    if re.match("-+v",    argx): action = "ver";   continue       # -version
+    if re.match("-+f",    argx): action = "file";  continue       # -file
+    if re.match("-+s",    argx): action = "start"; continue       # -start ( -open )
+    if re.match("=+d",    argx): debug  = "all";   continue       # troubleshooting
     fnpattern = argx
 
 ####################################################################### }}} 1
