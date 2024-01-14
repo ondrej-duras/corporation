@@ -238,6 +238,7 @@ def commandLine():
       ACTION.append("debug")
       ACTION.append("add")
       FILE.append(args.pop(0))
+      DEBUG=True
       continue
 
     if argx in ("-a","--add","add"):
