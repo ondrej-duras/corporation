@@ -1,0 +1,34 @@
+#=vim syntax match Xtest /hello.*/
+#=vim high Xtest ctermfg=darkred guifg=#a00000
+
+# Tu treba 
+#| set a fancy prompt (non-color, unless we know we "want" color)
+pridavat premenne z `echo $TERM`
+case "$TERM" in
+    # xterm-color|*-256color) color_prompt=yes;;
+    screen|xterm|xterm-color|*-256color) color_prompt=yes;;
+esac
+
+# Tuto ...
+# 1. miesto pracovneho adresara \w dat cislo TTY linky \l
+# 2. nastavit pre farebne terminaly rozlisovanie 
+#  ... 2.1. biele T pre ciste terminaly, na ktorych nieje spusteny screen
+#  ... 2.2. cervene S pre terminaly - okna spustene pod screenom
+if [ "$color_prompt" = yes ]; then
+    #PS1='${<distribucia>_chroot:+($<distribucia>_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    if [ "${TERM}" = "screen" ]; then
+      PS1='${<distribucia>_chroot:+($<distribucia>_chroot)}\[\033[0;36m\]\h\[\033[00m\]\[\033[01;33m\]-\l-\[\033[1;31m\]S\[\033[00m\]\$ '
+    else
+      PS1='${<distribucia>_chroot:+($<distribucia>_chroot)}\[\033[0;36m\]\h\[\033[00m\]\[\033[01;33m\]-\l-\[\033[1;37m\]T\[\033[00m\]\$ '
+    fi
+else
+    #PS1='${<distribucia>_chroot:+($<distribucia>_chroot)}\u@\h:\w\$ '
+    PS1='${<distribucia>_chroot:+($<distribucia>_chroot)}\h-\lt\$ '
+fi
+
+# a potom ... pre PWA, ak by sa nasadzovalo, tak
+# vygenerovat do prostredia globalnu premennu  PWA_KEY, alebo PWA_SEED, alebo tak nejak ... pozriet do PWA.PL zdrojakov
+
+# --- end ---
+
+
